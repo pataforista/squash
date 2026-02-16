@@ -348,16 +348,52 @@
       </div>
 
       <div class="block" style="margin-bottom:var(--space-5);">
-        <h3 class="h-title" style="font-size:12px; margin-bottom:10px; color:var(--accent-3);">Importar ejercicios (TXT)
-        </h3>
-        <p style="margin:0 0 10px 0; font-size:12px; color:var(--muted);">
-          Carga un archivo <b>.txt</b> con ejercicios (separados por línea en blanco) y cada bloque se añadirá al plan.
-        </p>
-        <input type="file" id="txtImport" accept=".txt,text/plain" class="btn ghost" style="width:100%; padding:8px;" />
-        <p style="margin:10px 0 0; font-size:11px; color:var(--muted);">
-          Formato sugerido: título en la primera línea y, opcionalmente, líneas como <code>Setup:</code>,
-          <code>Explica:</code>, <code>Bien:</code>, <code>Mal:</code>, <code>Bloque:</code> (wu/ae/th/pw/gm).
-        </p>
+        <details>
+          <summary class="h-title" style="font-size:12px; cursor:pointer; color:var(--accent-3); display:list-item;">
+            Gestionar Ejercicios (Editor)
+          </summary>
+          <div style="margin-top:var(--space-4);">
+            <div id="exForm"
+              style="display:grid; gap:var(--space-3); padding:var(--space-4); background:var(--surface-2); border-radius:8px;">
+              <input type="text" id="exTitle" placeholder="Título del ejercicio (ej: Drive Recto)" class="btn ghost"
+                style="text-align:left; font-size:13px;">
+              <input type="text" id="exSetup" placeholder="Setup (ej: En la caja de saque)" class="btn ghost"
+                style="text-align:left; font-size:13px;">
+              <textarea id="exExplain" placeholder="Explicación del ejercicio..." class="btn ghost"
+                style="text-align:left; font-size:13px; min-height:60px;"></textarea>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-3);">
+                <input type="text" id="exGood" placeholder="Bien: (punto clave)" class="btn ghost"
+                  style="text-align:left; font-size:13px;">
+                <input type="text" id="exBad" placeholder="Mal: (error común)" class="btn ghost"
+                  style="text-align:left; font-size:13px;">
+              </div>
+              <div style="display:flex; gap:var(--space-3); align-items:center;">
+                <select id="exBlock" class="btn ghost" style="flex:1;">
+                  <option value="wu">Calentamiento</option>
+                  <option value="ae">Paralelas</option>
+                  <option value="th">Figura 8</option>
+                  <option value="pw">Movimiento</option>
+                  <option value="gm">Presión</option>
+                </select>
+                <button class="btn accent" id="btnAddEx" style="flex:1;">Añadir Ejercicio</button>
+              </div>
+            </div>
+
+            <div id="customList" style="margin-top:var(--space-5); display:grid; gap:var(--space-3);">
+              <!-- Custom exercises appear here -->
+            </div>
+
+            <div style="border-top:1px solid var(--line); margin-top:var(--space-5); padding-top:var(--space-4);">
+              <h4 class="h-title" style="font-size:10px; margin-bottom:10px;">Importar via TXT (Avanzado)</h4>
+              <input type="file" id="txtImport" accept=".txt,text/plain" class="btn ghost"
+                style="width:100%; padding:8px;">
+              <p style="font-size:10px; color:var(--muted); margin-top:8px;">
+                Carga un archivo <b>.txt</b> con ejercicios. Formato: título en 1ra línea, luego <code>Setup:</code>,
+                <code>Explica:</code>, <code>Bien:</code>, <code>Mal:</code>, <code>Bloque:</code> (wu/ae/th/pw/gm).
+              </p>
+            </div>
+          </div>
+        </details>
       </div>
 
       <div id="sessionBlocks"></div>
@@ -603,6 +639,34 @@
       });
     }
 
+    function renderCustomList() {
+      const list = document.getElementById("customList");
+      if (!list) return;
+      if (state.custom_exercises.length === 0) {
+        list.innerHTML = `<div style="font-size:11px; color:var(--muted); text-align:center;">No hay ejercicios personalizados.</div>`;
+        return;
+      }
+      list.innerHTML = state.custom_exercises.map((ex, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--surface); padding:8px 12px; border:1px solid var(--line); border-radius:6px; font-size:12px;">
+          <div>
+            <b style="color:var(--accent)">[${ex.blockId.toUpperCase()}]</b> ${escapeHTML(ex.title)}
+          </div>
+          <button class="btn ghost" onclick="deleteEx(${idx})" style="padding:4px 8px; font-size:10px; color:var(--accent-2);">Eliminar</button>
+        </div>
+      `).join("");
+    }
+
+    window.deleteEx = (idx) => {
+      if (confirm("¿Eliminar este ejercicio?")) {
+        state.custom_exercises.splice(idx, 1);
+        save();
+        mergeCustomExercises();
+        render();
+        renderCustomList();
+        toast("Ejercicio eliminado");
+      }
+    };
+
     function render() {
       ensureSessionIntegrity();
       document.documentElement.setAttribute("data-mode", state.theme);
@@ -742,15 +806,55 @@
       const text = await file.text();
       const parsed = parseExercisesTXT(text);
       if (!parsed.length) { toast("TXT vacío o formato inválido"); return; }
-      state.custom_exercises = parsed;
+      state.custom_exercises = [...state.custom_exercises, ...parsed];
       save();
       mergeCustomExercises();
       render();
+      renderCustomList();
       toast(`${parsed.length} ejercicios importados`);
+      e.target.value = "";
+    };
+
+    document.getElementById("btnAddEx").onclick = () => {
+      const title = document.getElementById("exTitle").value.trim();
+      const setup = document.getElementById("exSetup").value.trim();
+      const explain = document.getElementById("exExplain").value.trim();
+      const good = document.getElementById("exGood").value.trim();
+      const bad = document.getElementById("exBad").value.trim();
+      const blockId = document.getElementById("exBlock").value;
+
+      if (!title) { toast("Título requerido"); return; }
+
+      const newEx = {
+        id: `custom_${Date.now()}`,
+        stage: 1,
+        title,
+        setup: setup || "Sin setup definido.",
+        manual: {
+          explain: explain || "Practica con control y ritmo progresivo.",
+          good: good || "Impacto limpio y balanceado.",
+          bad: bad || "Forzar velocidad sin técnica."
+        },
+        blockId
+      };
+
+      state.custom_exercises.push(newEx);
+      save();
+      mergeCustomExercises();
+      render();
+      renderCustomList();
+      toast("Ejercicio añadido");
+
+      // Reset fields
+      document.getElementById("exTitle").value = "";
+      document.getElementById("exSetup").value = "";
+      document.getElementById("exExplain").value = "";
+      document.getElementById("exGood").value = "";
+      document.getElementById("exBad").value = "";
     };
 
     mergeCustomExercises();
-    initUI(); render();
+    initUI(); render(); renderCustomList();
   </script>
 </body>
 
