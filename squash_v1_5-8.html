@@ -347,6 +347,19 @@
         Nivel 1 (sesiones 1-4): base técnica · Nivel 2 (5-8): consistencia · Nivel 3 (9+): presión de partido.
       </div>
 
+      <div class="block" style="margin-bottom:var(--space-5);">
+        <h3 class="h-title" style="font-size:12px; margin-bottom:10px; color:var(--accent-3);">Importar ejercicios (TXT)
+        </h3>
+        <p style="margin:0 0 10px 0; font-size:12px; color:var(--muted);">
+          Carga un archivo <b>.txt</b> con ejercicios (separados por línea en blanco) y cada bloque se añadirá al plan.
+        </p>
+        <input type="file" id="txtImport" accept=".txt,text/plain" class="btn ghost" style="width:100%; padding:8px;" />
+        <p style="margin:10px 0 0; font-size:11px; color:var(--muted);">
+          Formato sugerido: título en la primera línea y, opcionalmente, líneas como <code>Setup:</code>,
+          <code>Explica:</code>, <code>Bien:</code>, <code>Mal:</code>, <code>Bloque:</code> (wu/ae/th/pw/gm).
+        </p>
+      </div>
+
       <div id="sessionBlocks"></div>
 
       <div id="completionZone" style="display:none; margin-top:30px;">
@@ -406,7 +419,7 @@
     const DEFAULT_STATE = {
       version: 6, count: 0, session: null, history: [],
       theme: "dark", plan_id: "foundation", total_min: 15,
-      auto_advance: false, notif: false
+      auto_advance: false, notif: false, custom_exercises: []
     };
 
     const catalog = {
@@ -461,10 +474,50 @@
       }
     };
 
+    const baseCatalogBlocks = structuredClone(catalog.blocks);
+
     // --- State Initialization ---
     function safeParse(json, fallback) { try { return JSON.parse(json) ?? fallback; } catch { return fallback; } }
     let state = safeParse(localStorage.getItem(STORE_KEY), null) || structuredClone(DEFAULT_STATE);
+    if (!Array.isArray(state.custom_exercises)) state.custom_exercises = [];
     function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+    function normalizeBlockId(v) {
+      const id = String(v || "").trim().toLowerCase();
+      return ["wu", "ae", "th", "pw", "gm"].includes(id) ? id : "ae";
+    }
+
+    function parseExercisesTXT(content) {
+      return content
+        .split(/\n\s*\n/g)
+        .map(chunk => chunk.trim())
+        .filter(Boolean)
+        .map((chunk, idx) => {
+          const lines = chunk.split("\n").map(x => x.trim()).filter(Boolean);
+          const title = lines[0] || `Ejercicio ${idx + 1}`;
+          const setup = lines.find(x => /^setup\s*:/i.test(x))?.replace(/^setup\s*:/i, "").trim() || "Sin setup definido.";
+          const explain = lines.find(x => /^(explica|explain)\s*:/i.test(x))?.replace(/^(explica|explain)\s*:/i, "").trim() || "Practica con control y ritmo progresivo.";
+          const good = lines.find(x => /^bien\s*:/i.test(x))?.replace(/^bien\s*:/i, "").trim() || "Impacto limpio y balanceado.";
+          const bad = lines.find(x => /^mal\s*:/i.test(x))?.replace(/^mal\s*:/i, "").trim() || "Forzar velocidad sin técnica.";
+          const blockIdRaw = lines.find(x => /^bloque\s*:/i.test(x))?.replace(/^bloque\s*:/i, "").trim();
+          const blockId = normalizeBlockId(blockIdRaw);
+          return {
+            id: `custom_${Date.now()}_${idx}`,
+            stage: 1, // Custom ones default to stage 1 to be always available
+            title,
+            setup,
+            manual: { explain, good, bad },
+            blockId
+          };
+        });
+    }
+
+    function mergeCustomExercises() {
+      ["wu", "ae", "th", "pw", "gm"].forEach(id => {
+        const custom = state.custom_exercises.filter(x => x.blockId === id);
+        catalog.blocks[id] = [...baseCatalogBlocks[id], ...custom];
+      });
+    }
 
     // --- Helpers ---
     function nowISODate() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
@@ -683,6 +736,20 @@
       document.getElementById("btnNotif").textContent = `AVISOS: ${state.notif ? 'ON' : 'OFF'}`;
     }
 
+    document.getElementById("txtImport").onchange = async e => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      const parsed = parseExercisesTXT(text);
+      if (!parsed.length) { toast("TXT vacío o formato inválido"); return; }
+      state.custom_exercises = parsed;
+      save();
+      mergeCustomExercises();
+      render();
+      toast(`${parsed.length} ejercicios importados`);
+    };
+
+    mergeCustomExercises();
     initUI(); render();
   </script>
 </body>
