@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="es" data-mode="dark">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0D0D0F" />
+  <title>Squash Solo Pro — v1.5</title>
+  <style>
+    /* =========================================
+       THEME TOKENS — Squash Pro Premium
+       ========================================= */
+    :root {
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 40px;
+      --space-10: 64px;
+      --radius-2: 12px;
+      --radius-4: 24px;
+      --font-display: "Outfit", "Segoe UI", system-ui, sans-serif;
+      --font-body: "Inter", system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", "SF Mono", monospace;
+      --dur-1: 200ms;
+      --dur-2: 400ms;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Helper for HSL colors */
+    @function h_s_l($h, $s, $l, $a: 1) {
+      @return hsla($h, $s, $l, $a);
+    }
+
+    :root[data-mode="light"] {
+      --bg: hsl(210, 20%, 98%);
+      --surface: hsl(0, 0%, 100%);
+      --surface-2: hsl(210, 25%, 94%);
+      --ink: hsl(210, 40%, 10%);
+      --ink-2: hsl(210, 20%, 30%);
+      --muted: hsl(210, 15%, 50%);
+      --line: hsla(210, 20%, 0%, 0.1);
+      --line-strong: hsl(210, 40%, 10%);
+      --accent: hsl(210, 100%, 50%);
+      --accent-glow: hsla(210, 100%, 50%, 0.15);
+      --accent-2: hsl(350, 90%, 55%);
+      --accent-3: hsl(145, 60%, 45%);
+      --shadow: 0 8px 32px hsla(210, 30%, 10%, 0.08);
+      --glass: rgba(255, 255, 255, 0.7);
+      --glass-blur: blur(12px);
+    }
+
+    :root[data-mode="dark"] {
+      --bg: hsl(210, 30%, 4%);
+      --surface: hsl(210, 25%, 8%);
+      --surface-2: hsl(210, 20%, 12%);
+      --ink: hsl(210, 20%, 98%);
+      --ink-2: hsl(210, 15%, 85%);
+      --muted: hsl(210, 10%, 60%);
+      --line: hsla(210, 20%, 100%, 0.1);
+      --line-strong: hsl(210, 10%, 90%);
+      --accent: hsl(200, 100%, 60%);
+      --accent-glow: hsla(200, 100%, 60%, 0.2);
+      --accent-2: hsl(350, 100%, 65%);
+      --accent-3: hsl(145, 70%, 60%);
+      --shadow: 0 12px 48px hsla(0, 0%, 0%, 0.5);
+      --glass: rgba(20, 22, 28, 0.7);
+      --glass-blur: blur(16px);
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;900&display=swap');
+
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      transition: background var(--dur-2) var(--ease-out), color var(--dur-2);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--glass);
+      backdrop-filter: var(--glass-blur);
+      border-bottom: 1px solid var(--line);
+      padding: var(--space-4) var(--space-6);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: var(--space-6) var(--space-4);
+      display: grid;
+      gap: var(--space-6);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-2);
+      box-shadow: var(--shadow);
+      padding: var(--space-6);
+      overflow: hidden;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .btn {
+      min-height: 44px;
+      border-radius: var(--radius-2);
+      border: 1px solid var(--line-strong);
+      padding: 10px 20px;
+      background: var(--ink);
+      color: var(--bg);
+      font-family: var(--font-display);
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all var(--dur-1) var(--ease-out);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--ink);
+      border-color: var(--line-strong);
+    }
+
+    .btn.accent {
+      background: var(--accent);
+      border-color: transparent;
+      color: #fff;
+    }
+
+    .kpi {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .kpi b {
+      color: var(--ink);
+      font-size: 14px;
+      font-family: var(--font-display);
+    }
+
+    .h-title {
+      font-family: var(--font-display);
+      font-weight: 900;
+      color: var(--ink);
+      text-transform: uppercase;
+      font-size: 18px;
+      margin: 0 0 var(--space-4) 0;
+    }
+
+    .block {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-2);
+      padding: var(--space-5);
+      margin-bottom: var(--space-4);
+    }
+
+    .block.active {
+      border-color: var(--accent);
+      border-width: 2px;
+    }
+
+    .timer-display {
+      font-family: var(--font-mono);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .timer-active {
+      color: var(--accent);
+      text-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .timer-ended {
+      color: var(--accent-2);
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from {
+        opacity: 1;
+      }
+
+      to {
+        opacity: 0.5;
+      }
+    }
+
+    .pill {
+      display: inline-block;
+      background: var(--surface);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--muted);
+      margin-right: 8px;
+    }
+
+    .manual-box {
+      background: var(--surface);
+      padding: var(--space-4);
+      border-radius: 8px;
+      margin-top: var(--space-4);
+      font-size: 13px;
+    }
+
+    .manual-label {
+      font-size: 10px;
+      font-weight: 900;
+      color: var(--accent-2);
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .chart-container {
+      margin-top: 24px;
+    }
+
+    .bar {
+      fill: var(--accent);
+      rx: 4;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      background: var(--surface);
+      border: 2px solid var(--line-strong);
+      padding: 10px 24px;
+      border-radius: 999px;
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--dur-1);
+      z-index: 9999;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    select.btn {
+      text-transform: none;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div style="display:flex; align-items:center; gap:var(--space-3);">
+      <h1 style="font-family:var(--font-display); font-weight:900; font-size:20px; margin:0; text-transform:uppercase;">
+        Squash <span style="color:var(--accent)">Solo</span>
+      </h1>
+      <span id="wakeLockIndicator"
+        style="display:none; font-size:10px; background:var(--accent-3); color:#fff; padding:2px 8px; border-radius:10px;">LIVE</span>
+    </div>
+    <button class="btn ghost" id="themeToggle" style="padding:6px 12px; font-size:10px;">MODO</button>
+  </header>
+
+  <main class="wrap">
+    <!-- CONFIGURACIÓN -->
+    <section class="card">
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:var(--space-4); margin-bottom:var(--space-5);">
+        <div>
+          <h2 class="h-title" style="margin:0; font-size:16px;">Sesión Actual</h2>
+          <div class="row" style="margin-top:8px;">
+            <div class="kpi"><b id="kpiTotal">15</b> min</div>
+            <div class="kpi"><b id="kpiDone">0</b> bloques</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:var(--space-3);">
+          <div>
+            <label
+              style="font-size:9px; font-weight:900; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:4px;">Duración</label>
+            <select id="durationSelect" class="btn ghost">
+              <option value="15">15 min</option>
+              <option value="30">30 min</option>
+              <option value="45">45 min</option>
+              <option value="60">60 min</option>
+            </select>
+          </div>
+          <div>
+            <label
+              style="font-size:9px; font-weight:900; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:4px;">Enfoque</label>
+            <select id="planSelect" class="btn ghost"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-bottom:var(--space-5);">
+        <button class="btn ghost" id="btnNotif" style="font-size:10px; padding:6px 12px;">AVISOS: OFF</button>
+        <button class="btn ghost" id="btnAuto" style="font-size:10px; padding:6px 12px;">AUTO: OFF</button>
+        <div id="sessionCounter"
+          style="margin-left:auto; font-family:var(--font-mono); font-weight:900; font-size:18px; color:var(--accent);">
+          #01</div>
+      </div>
+
+      <div id="sessionBlocks"></div>
+
+      <div id="completionZone" style="display:none; margin-top:30px;">
+        <h3 class="h-title" style="font-size:12px; color:var(--accent-3);">Resumen de Esfuerzo</h3>
+        <div style="display:grid; grid-template-columns: 1fr 2fr; gap:15px;">
+          <input type="number" id="rpeInput" min="1" max="10" placeholder="RPE 1-10"
+            style="padding:12px; border-radius:10px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink);">
+          <textarea id="notesInput" rows="2" placeholder="Notas técnicas..."
+            style="padding:12px; border-radius:10px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink);"></textarea>
+        </div>
+        <div class="row" style="margin-top:20px;">
+          <button class="btn accent" id="btnComplete" style="flex:2;">Guardar Sesión</button>
+          <button class="btn ghost" id="btnReset" style="flex:1;">Descartar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRO TIPS -->
+    <section class="card">
+      <h2 class="h-title" style="font-size:14px; color:var(--accent-2);">Guía Técnica Rápida</h2>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+        <div
+          style="padding:12px; border-left: 3px solid var(--accent); background:var(--surface-2); border-radius:8px; font-size:12px;">
+          <b>Control de Pared:</b> Mantén los hombros paralelos a la pared lateral para drives rectos.
+        </div>
+        <div
+          style="padding:12px; border-left: 3px solid var(--accent-3); background:var(--surface-2); border-radius:8px; font-size:12px;">
+          <b>Paso de T:</b> Vuelve siempre al centro tras golpear. No te quedes mirando la bola.
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORIAL -->
+    <section class="card">
+      <h2 class="h-title" style="font-size:14px;">Evolución (RPE)</h2>
+      <div class="chart-container">
+        <svg id="rpeChart" viewBox="0 0 300 100" preserveAspectRatio="none" style="height:100px; width:100%;">
+          <line x1="0" y1="100" x2="300" y2="100" stroke="var(--line)" stroke-width="1"></line>
+        </svg>
+      </div>
+      <div class="row" style="margin-top:24px;">
+        <button class="btn ghost" id="btnExportCSV" style="flex:1; font-size:10px;">Exportar CSV</button>
+        <button class="btn ghost" id="btnWipe" style="flex:1; font-size:10px; color:var(--accent-2);">Borrar
+          Todo</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    /* =========================================
+       SQUASH SOLO PRO — v1.5
+       ========================================= */
+
+    const STORE_KEY = "squash_pro_v1";
+    const DEFAULT_STATE = {
+      version: 6, count: 0, session: null, history: [],
+      theme: "dark", plan_id: "foundation", total_min: 15,
+      auto_advance: false, notif: false
+    };
+
+    const catalog = {
+      plans: [
+        {
+          id: "foundation", name: "Fundamentos: Control y Precisión",
+          structure: [
+            { id: "wu", weight: 0.15, label: "Calentamiento" },
+            { id: "ae", weight: 0.35, label: "Paralelas" },
+            { id: "th", weight: 0.20, label: "Figura 8" },
+            { id: "pw", weight: 0.20, label: "Movimiento" },
+            { id: "gm", weight: 0.10, label: "Presión" }
+          ]
+        },
+        {
+          id: "conditioning", name: "Condición: Resistencia",
+          structure: [
+            { id: "wu", weight: 0.10, label: "Calentamiento" },
+            { id: "pw", weight: 0.40, label: "Ghosting Intervalos" },
+            { id: "th", weight: 0.20, label: "Voleas Cruzadas" },
+            { id: "ae", weight: 0.20, label: "Drives Fondo" },
+            { id: "gm", weight: 0.10, label: "Finalización" }
+          ]
+        }
+      ],
+      blocks: {
+        wu: [{ id: "wu_1", title: "Calentamiento Pro", setup: "Frente a pared frontal.", manual: { explain: "Calienta la bola 5 min con voleas suaves.", good: "Impacto delante del cuerpo.", bad: "Swing largo de tenis." } }],
+        ae: [{ id: "ae_1", title: "Drives de Pasillo", setup: "Lateral a la caja de saque.", manual: { explain: "Golpe paralelo que muere al fondo.", good: "Muñeca firme en el impacto.", bad: "Pegar de frente a la frontal." } }],
+        th: [{ id: "th_1", title: "Figura de 8", setup: "En la T.", manual: { explain: "Entrena cambio de hombros y lectura.", good: "Raqueta lista pronto.", bad: "Raqueta abajo al moverte." } }],
+        pw: [{ id: "pw_1", title: "Ghosting Intensivo", setup: "Sin bola, desde la T.", manual: { explain: "Muévete a las esquinas simulando el golpe.", good: "Equilibrio total en el lunge.", bad: "Pasos cruzados al volver." } }],
+        gm: [{ id: "gm_1", title: "Targets de Presión", setup: "Botella en esquina trasera.", manual: { explain: "Intenta golpear el objeto con drives.", good: "Ritmo fluido y puntería.", bad: "Frustración al fallar." } }]
+      }
+    };
+
+    // --- State Initialization ---
+    function safeParse(json, fallback) { try { return JSON.parse(json) ?? fallback; } catch { return fallback; } }
+    let state = safeParse(localStorage.getItem(STORE_KEY), null) || structuredClone(DEFAULT_STATE);
+    function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+    // --- Helpers ---
+    function nowISODate() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+    function escapeHTML(str) { return String(str).replace(/[&<>"'`]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;", "`": "&#96;" }[c])); }
+    function mmss(s) { const m = Math.floor(s / 60); const rs = Math.max(0, s % 60); return `${m}:${rs.toString().padStart(2, '0')}`; }
+    function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2000); }
+
+    const Alarm = {
+      ctx: null,
+      init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+      async play(type = "end") {
+        try {
+          this.init(); if (this.ctx.state === "suspended") await this.ctx.resume();
+          const n = this.ctx.currentTime;
+          const freqs = type === "start" ? [440, 880] : [880, 440, 880];
+          freqs.forEach((f, i) => {
+            const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+            o.connect(g); g.connect(this.ctx.destination);
+            o.type = "sine"; o.frequency.setValueAtTime(f, n + (i * 0.1));
+            g.gain.setValueAtTime(0.1, n + (i * 0.1)); g.gain.exponentialRampToValueAtTime(0.0001, n + (i * 0.1) + 0.08);
+            o.start(n + (i * 0.1)); o.stop(n + (i * 0.1) + 0.08);
+          });
+        } catch (e) { }
+      }
+    };
+
+    let wakeLock = null;
+    async function toggleWake(on) {
+      if (!("wakeLock" in navigator)) return;
+      try {
+        if (on && !wakeLock) { wakeLock = await navigator.wakeLock.request("screen"); document.getElementById("wakeLockIndicator").style.display = "inline"; }
+        else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; document.getElementById("wakeLockIndicator").style.display = "none"; }
+      } catch (e) { }
+    }
+
+    // --- Logic ---
+    function ensureSessionIntegrity() {
+      if (!state.session?.blocks) return;
+      state.session.blocks.forEach(b => {
+        if (b.timer.active && b.timer.endTime) {
+          const rem = Math.ceil((b.timer.endTime - Date.now()) / 1000);
+          b.timer.rem = Math.max(0, rem);
+          if (b.timer.rem === 0) { b.timer.active = false; b.timer.finished = true; }
+        }
+      });
+    }
+
+    function generate() {
+      const n = (Number(state.count) || 0) + 1;
+      const seed = n * 41;
+      const pick = (arr, s) => arr[Math.abs(s) % arr.length];
+      const plan = catalog.plans.find(p => p.id === state.plan_id) || catalog.plans[0];
+      const totalSec = state.total_min * 60;
+
+      const blocks = plan.structure.map((s, i) => {
+        const drill = pick(catalog.blocks[s.id], seed + i);
+        const blockSec = Math.round(totalSec * s.weight);
+        return { ...drill, label: s.label, seconds: blockSec, timer: { rem: blockSec, active: false, finished: false, endTime: null } };
+      });
+      state.session = { n, date: nowISODate(), plan_id: plan.id, plan_name: plan.name, blocks };
+      save(); render(); toast("Plan generado");
+    }
+
+    function renderChart() {
+      const svg = document.getElementById("rpeChart"); if (!svg) return;
+      svg.querySelectorAll(".bar").forEach(e => e.remove());
+      const data = state.history.slice(-12);
+      const spacing = 300 / 12;
+      data.forEach((h, i) => {
+        const v = Math.min(10, Math.max(1, Number(h.rpe) || 1));
+        const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        r.setAttribute("x", i * spacing + 5); r.setAttribute("y", 100 - (v * 10));
+        r.setAttribute("width", spacing - 10); r.setAttribute("height", v * 10);
+        r.setAttribute("class", "bar"); svg.appendChild(r);
+      });
+    }
+
+    function render() {
+      ensureSessionIntegrity();
+      document.documentElement.setAttribute("data-mode", state.theme);
+      const container = document.getElementById("sessionBlocks");
+      const zone = document.getElementById("completionZone");
+      const counter = document.getElementById("sessionCounter");
+
+      document.getElementById("kpiTotal").textContent = state.total_min;
+
+      if (!state.session) {
+        counter.textContent = `#${(state.count + 1).toString().padStart(2, '0')}`;
+        document.getElementById("kpiDone").textContent = "0";
+        zone.style.display = "none";
+        container.innerHTML = `<div style="text-align:center; padding:40px; border:2px dashed var(--line); border-radius:12px;"><button class="btn accent" id="btnGen">Comenzar Entrenamiento</button></div>`;
+        document.getElementById("btnGen").onclick = generate;
+      } else {
+        counter.textContent = `#${state.session.n.toString().padStart(2, '0')}`;
+        document.getElementById("kpiDone").textContent = state.session.blocks.filter(b => b.timer.finished).length;
+        zone.style.display = "block";
+        container.innerHTML = state.session.blocks.map((b, i) => `
+          <div class="block ${b.timer.active ? 'active' : ''}">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <span class="pill" style="color:var(--accent)">${escapeHTML(b.label)}</span>
+                <div style="font-family:var(--font-display); font-weight:900; font-size:18px;">${escapeHTML(b.title)}</div>
+              </div>
+              <div class="timer-display ${b.timer.active ? 'timer-active' : ''} ${b.timer.finished ? 'timer-ended' : ''}" id="t_${i}">${mmss(b.timer.rem)}</div>
+            </div>
+            <div class="manual-box">
+              <div style="margin-bottom:8px;">${escapeHTML(b.manual.explain)}</div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:11px;">
+                <div style="color:var(--accent-3)"><b>BIEN:</b> ${escapeHTML(b.manual.good)}</div>
+                <div style="color:var(--accent-2)"><b>MAL:</b> ${escapeHTML(b.manual.bad)}</div>
+              </div>
+            </div>
+            <div class="row" style="margin-top:16px;">
+              <button class="btn ${b.timer.active ? 'ghost' : 'accent'}" onclick="toggleT(${i})">${b.timer.active ? 'Pausar' : (b.timer.finished ? 'Reiniciar' : 'Empezar')}</button>
+              <button class="btn ghost" style="padding:8px 12px; font-size:10px;" onclick="skipT(${i})">Hecho</button>
+            </div>
+          </div>
+        `).join("");
+      }
+      renderChart();
+    }
+
+    window.toggleT = async (idx) => {
+      if (!state.session) return;
+      const b = state.session.blocks[idx];
+      const active = !b.timer.active;
+      state.session.blocks.forEach((x, j) => { if (j !== idx && x.timer.active) { x.timer.active = false; x.timer.endTime = null; } });
+      if (active) {
+        if (b.timer.finished) { b.timer.rem = b.seconds; b.timer.finished = false; }
+        b.timer.active = true; b.timer.endTime = Date.now() + (b.timer.rem * 1000);
+        Alarm.play("start"); toggleWake(true);
+      } else {
+        if (b.timer.endTime) b.timer.rem = Math.ceil((b.timer.endTime - Date.now()) / 1000);
+        b.timer.active = false; b.timer.endTime = null; toggleWake(false);
+      }
+      save(); render();
+    };
+
+    window.skipT = (idx) => {
+      if (!state.session) return;
+      const b = state.session.blocks[idx];
+      b.timer.active = false; b.timer.rem = 0; b.timer.finished = true; b.timer.endTime = null;
+      save(); render();
+    };
+
+    setInterval(() => {
+      if (!state.session?.blocks) return;
+      state.session.blocks.forEach((b, i) => {
+        if (b.timer.active && b.timer.endTime) {
+          const rem = Math.ceil((b.timer.endTime - Date.now()) / 1000);
+          b.timer.rem = Math.max(0, rem);
+          if (b.timer.rem === 0) {
+            b.timer.active = false; b.timer.finished = true; b.timer.endTime = null;
+            Alarm.play("end");
+            if (state.auto_advance) {
+              const next = state.session.blocks.findIndex((x, j) => j > i && !x.timer.finished);
+              if (next !== -1) setTimeout(() => window.toggleT(next), 1000);
+            }
+            save(); render();
+          } else {
+            const el = document.getElementById(`t_${i}`); if (el) el.textContent = mmss(b.timer.rem);
+          }
+        }
+      });
+    }, 500);
+
+    document.getElementById("btnComplete").onclick = () => {
+      const rpe = parseInt(document.getElementById("rpeInput").value, 10);
+      if (!rpe || rpe < 1 || rpe > 10) { alert("Esfuerzo 1-10"); return; }
+      state.history.push({ date: nowISODate(), n: state.session.n, plan: state.session.plan_name, rpe, notes: document.getElementById("notesInput").value });
+      state.count = state.session.n; state.session = null; save(); render(); toast("Guardado");
+    };
+
+    document.getElementById("btnReset").onclick = () => { if (confirm("¿Descartar?")) { state.session = null; save(); render(); } };
+    document.getElementById("themeToggle").onclick = () => { state.theme = state.theme === "light" ? "dark" : "light"; save(); render(); };
+    document.getElementById("durationSelect").onchange = e => { state.total_min = parseInt(e.target.value, 10); save(); if (!state.session) render(); };
+    document.getElementById("planSelect").onchange = e => { state.plan_id = e.target.value; save(); if (!state.session) render(); };
+
+    document.getElementById("btnAuto").onclick = () => {
+      state.auto_advance = !state.auto_advance;
+      document.getElementById("btnAuto").textContent = `AUTO: ${state.auto_advance ? 'ON' : 'OFF'}`;
+      save();
+    };
+
+    document.getElementById("btnNotif").onclick = async () => {
+      const res = await Notification.requestPermission();
+      if (res === "granted") { state.notif = !state.notif; document.getElementById("btnNotif").textContent = `AVISOS: ${state.notif ? 'ON' : 'OFF'}`; save(); }
+    };
+
+    document.getElementById("btnExportCSV").onclick = () => {
+      const esc = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const head = ["date", "n", "plan", "rpe", "notes"].map(esc).join(",");
+      const body = state.history.map(h => [h.date, h.n, h.plan, h.rpe, h.notes].map(esc).join(",")).join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([head + "\n" + body], { type: "text/csv" }));
+      a.download = `squash_${nowISODate()}.csv`; a.click();
+    };
+
+    document.getElementById("btnWipe").onclick = () => { if (confirm("¿Borrar todo?")) { state = structuredClone(DEFAULT_STATE); save(); render(); initUI(); } };
+
+    function initUI() {
+      const sp = document.getElementById("planSelect");
+      sp.innerHTML = catalog.plans.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+      sp.value = state.plan_id;
+      document.getElementById("durationSelect").value = state.total_min;
+      document.getElementById("btnAuto").textContent = `AUTO: ${state.auto_advance ? 'ON' : 'OFF'}`;
+      document.getElementById("btnNotif").textContent = `AVISOS: ${state.notif ? 'ON' : 'OFF'}`;
+    }
+
+    initUI(); render();
+  </script>
+</body>
+
+</html>
