@@ -342,6 +342,11 @@
           #01</div>
       </div>
 
+      <div class="manual-box" style="margin-top:0; margin-bottom:var(--space-5);">
+        <span class="manual-label">Progresión automática</span>
+        Nivel 1 (sesiones 1-4): base técnica · Nivel 2 (5-8): consistencia · Nivel 3 (9+): presión de partido.
+      </div>
+
       <div id="sessionBlocks"></div>
 
       <div id="completionZone" style="display:none; margin-top:30px;">
@@ -428,11 +433,31 @@
         }
       ],
       blocks: {
-        wu: [{ id: "wu_1", title: "Calentamiento Pro", setup: "Frente a pared frontal.", manual: { explain: "Calienta la bola 5 min con voleas suaves.", good: "Impacto delante del cuerpo.", bad: "Swing largo de tenis." } }],
-        ae: [{ id: "ae_1", title: "Drives de Pasillo", setup: "Lateral a la caja de saque.", manual: { explain: "Golpe paralelo que muere al fondo.", good: "Muñeca firme en el impacto.", bad: "Pegar de frente a la frontal." } }],
-        th: [{ id: "th_1", title: "Figura de 8", setup: "En la T.", manual: { explain: "Entrena cambio de hombros y lectura.", good: "Raqueta lista pronto.", bad: "Raqueta abajo al moverte." } }],
-        pw: [{ id: "pw_1", title: "Ghosting Intensivo", setup: "Sin bola, desde la T.", manual: { explain: "Muévete a las esquinas simulando el golpe.", good: "Equilibrio total en el lunge.", bad: "Pasos cruzados al volver." } }],
-        gm: [{ id: "gm_1", title: "Targets de Presión", setup: "Botella en esquina trasera.", manual: { explain: "Intenta golpear el objeto con drives.", good: "Ritmo fluido y puntería.", bad: "Frustración al fallar." } }]
+        wu: [
+          { id: "wu_1", stage: 1, title: "Calentamiento Pro", setup: "Frente a pared frontal.", manual: { explain: "2 toques suaves por lado + 1 bote. Prioriza ritmo y respiración.", good: "Impacto delante del cuerpo y hombros relajados.", bad: "Golpear fuerte antes de activar piernas." } },
+          { id: "wu_2", stage: 2, title: "Calentamiento Dinámico", setup: "Frontal + desplazamiento lateral corto.", manual: { explain: "Alterna 3 voleas de drive y 3 de revés moviéndote medio paso.", good: "Split-step antes de cada golpe.", bad: "Pies estáticos y swing apurado." } },
+          { id: "wu_3", stage: 3, title: "Calentamiento Competitivo", setup: "Desde la T, tocando ambas esquinas delanteras.", manual: { explain: "Secuencia: volea drive, volea revés y salida rápida a la T.", good: "Cuerpo activado sin perder técnica.", bad: "Fatigarte de más en el calentamiento." } }
+        ],
+        ae: [
+          { id: "ae_1", stage: 1, title: "Drives de Pasillo", setup: "Lateral a la caja de saque.", manual: { explain: "Golpe paralelo con objetivo de 2º bote detrás de la línea corta.", good: "Muñeca firme y punto de impacto constante.", bad: "Pegar de frente a la frontal." } },
+          { id: "ae_2", stage: 2, title: "Paralelas con Objetivos", setup: "Marca dos zonas profundas con cinta.", manual: { explain: "10 bolas por lado intentando caer en zona objetivo.", good: "Altura media que besa pared lateral.", bad: "Buscar potencia en vez de longitud." } },
+          { id: "ae_3", stage: 3, title: "Paralelas Bajo Presión", setup: "Serie de 6 golpes seguidos por lado.", manual: { explain: "Si fallas profundidad, reinicia la serie desde 1.", good: "Rutina de preparación idéntica en cada golpe.", bad: "Acelerar el swing por ansiedad." } }
+        ],
+        th: [
+          { id: "th_1", stage: 1, title: "Figura de 8", setup: "En la T, bote permitido.", manual: { explain: "Cruza la bola de lado a lado para coordinar hombros y lectura.", good: "Raqueta lista antes del bote.", bad: "Llegar tarde con la cabeza de la raqueta abajo." } },
+          { id: "th_2", stage: 2, title: "Figura de 8 Continua", setup: "En la T, reduce altura de golpe.", manual: { explain: "Mantén 12 impactos seguidos alternando drive y revés.", good: "Cambio de empuñadura temprano.", bad: "Perder eje corporal al girar." } },
+          { id: "th_3", stage: 3, title: "Figura de 8 de Volea", setup: "Más cerca de la frontal, sin bote.", manual: { explain: "Bloquea voleas alternas para mejorar reacción y toma temprana.", good: "Golpe corto y compacto.", bad: "Golpear tarde y con brazo extendido." } }
+        ],
+        pw: [
+          { id: "pw_1", stage: 1, title: "Ghosting Base", setup: "Sin bola, desde la T.", manual: { explain: "Patrón 4 esquinas a ritmo técnico: salida, lunge y regreso.", good: "Centro de gravedad estable en cada apoyo.", bad: "Pasos cruzados al volver." } },
+          { id: "pw_2", stage: 2, title: "Ghosting por Intervalos", setup: "30 s trabajo + 15 s pausa activa.", manual: { explain: "Alterna esquina delantera y trasera del mismo lado, luego cambia.", good: "Primer paso explosivo, retorno controlado.", bad: "Perder postura al fatigarte." } },
+          { id: "pw_3", stage: 3, title: "Ghosting 6 Puntos", setup: "Incluye media pista y esquinas completas.", manual: { explain: "Secuencia continua con cambios de dirección rápidos.", good: "Recuperación instantánea a la T.", bad: "Saltar en vez de deslizarte con control." } }
+        ],
+        gm: [
+          { id: "gm_1", stage: 1, title: "Targets de Control", setup: "Botella en esquina trasera.", manual: { explain: "Intenta 8 impactos cercanos al objetivo con margen técnico.", good: "Ritmo fluido y puntería progresiva.", bad: "Frustrarte por fallos aislados." } },
+          { id: "gm_2", stage: 2, title: "Targets con Conteo", setup: "Dos objetivos: esquina trasera y media pared.", manual: { explain: "Anota aciertos de 12 intentos y busca superar tu marca.", good: "Ajuste fino de altura y profundidad.", bad: "No registrar resultados." } },
+          { id: "gm_3", stage: 3, title: "Finalización Competitiva", setup: "Objetivo pequeño (cono o lata).", manual: { explain: "1 punto por impacto limpio, 0 por error; juega a 10 puntos.", good: "Mantener técnica bajo presión mental.", bad: "Acortar preparación en los puntos finales." } }
+        ]
       }
     };
 
@@ -487,17 +512,25 @@
       });
     }
 
+    function getStageBySession(sessionNumber) {
+      if (sessionNumber <= 4) return 1;
+      if (sessionNumber <= 8) return 2;
+      return 3;
+    }
+
     function generate() {
       const n = (Number(state.count) || 0) + 1;
       const seed = n * 41;
       const pick = (arr, s) => arr[Math.abs(s) % arr.length];
       const plan = catalog.plans.find(p => p.id === state.plan_id) || catalog.plans[0];
       const totalSec = state.total_min * 60;
+      const sessionStage = getStageBySession(n);
 
       const blocks = plan.structure.map((s, i) => {
-        const drill = pick(catalog.blocks[s.id], seed + i);
+        const pool = catalog.blocks[s.id].filter(b => b.stage <= sessionStage);
+        const drill = pick(pool.length ? pool : catalog.blocks[s.id], seed + i);
         const blockSec = Math.round(totalSec * s.weight);
-        return { ...drill, label: s.label, seconds: blockSec, timer: { rem: blockSec, active: false, finished: false, endTime: null } };
+        return { ...drill, label: s.label, stage: drill.stage, seconds: blockSec, timer: { rem: blockSec, active: false, finished: false, endTime: null } };
       });
       state.session = { n, date: nowISODate(), plan_id: plan.id, plan_name: plan.name, blocks };
       save(); render(); toast("Plan generado");
@@ -538,13 +571,14 @@
         zone.style.display = "block";
         container.innerHTML = state.session.blocks.map((b, i) => `
           <div class="block ${b.timer.active ? 'active' : ''}">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-              <div>
-                <span class="pill" style="color:var(--accent)">${escapeHTML(b.label)}</span>
-                <div style="font-family:var(--font-display); font-weight:900; font-size:18px;">${escapeHTML(b.title)}</div>
-              </div>
-              <div class="timer-display ${b.timer.active ? 'timer-active' : ''} ${b.timer.finished ? 'timer-ended' : ''}" id="t_${i}">${mmss(b.timer.rem)}</div>
-            </div>
+             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+               <div>
+                 <span class="pill" style="color:var(--accent)">${escapeHTML(b.label)}</span>
+                 <span class="pill">Nivel ${b.stage}/3</span>
+                 <div style="font-family:var(--font-display); font-weight:900; font-size:18px;">${escapeHTML(b.title)}</div>
+               </div>
+               <div class="timer-display ${b.timer.active ? 'timer-active' : ''} ${b.timer.finished ? 'timer-ended' : ''}" id="t_${i}">${mmss(b.timer.rem)}</div>
+             </div>
             <div class="manual-box">
               <div style="margin-bottom:8px;">${escapeHTML(b.manual.explain)}</div>
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:11px;">
