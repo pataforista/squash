@@ -22,12 +22,14 @@
       --space-10: 64px;
       --radius-2: 12px;
       --radius-4: 24px;
+      --radius-round: 999px;
       --font-display: "Outfit", "Segoe UI", system-ui, sans-serif;
       --font-body: "Inter", system-ui, sans-serif;
       --font-mono: "JetBrains Mono", "SF Mono", monospace;
       --dur-1: 200ms;
       --dur-2: 400ms;
       --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
     }
 
     /* Helper for HSL colors */
@@ -55,8 +57,8 @@
 
     :root[data-mode="dark"] {
       --bg: hsl(210, 30%, 4%);
-      --surface: hsl(210, 25%, 8%);
-      --surface-2: hsl(210, 20%, 12%);
+      --surface: hsla(210, 25%, 8%, 0.8);
+      --surface-2: hsla(210, 20%, 12%, 0.5);
       --ink: hsl(210, 20%, 98%);
       --ink-2: hsl(210, 15%, 85%);
       --muted: hsl(210, 10%, 60%);
@@ -65,10 +67,23 @@
       --accent: hsl(200, 100%, 60%);
       --accent-glow: hsla(200, 100%, 60%, 0.2);
       --accent-2: hsl(350, 100%, 65%);
+      --accent-2-glow: hsla(350, 100%, 65%, 0.2);
       --accent-3: hsl(145, 70%, 60%);
+      --accent-3-glow: hsla(145, 70%, 60%, 0.2);
       --shadow: 0 12px 48px hsla(0, 0%, 0%, 0.5);
       --glass: rgba(20, 22, 28, 0.7);
-      --glass-blur: blur(16px);
+      --glass-blur: blur(24px);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at var(--glow-x, 50%) var(--glow-y, 50%), var(--glow-color, transparent) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+      opacity: 0.4;
+      transition: background var(--dur-2) var(--ease-out);
     }
 
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;900&display=swap');
@@ -116,6 +131,7 @@
       box-shadow: var(--shadow);
       padding: var(--space-6);
       overflow: hidden;
+      backdrop-filter: var(--glass-blur);
     }
 
     .row {
@@ -197,10 +213,36 @@
 
     .timer-display {
       font-family: var(--font-mono);
-      font-size: 32px;
+      font-size: 40px;
       font-weight: 700;
       color: var(--ink);
       line-height: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 120px;
+      height: 120px;
+    }
+
+    .timer-svg {
+      position: absolute;
+      inset: 0;
+      transform: rotate(-90deg);
+    }
+
+    .timer-circle-bg {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 8;
+    }
+
+    .timer-circle-prog {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s linear, stroke var(--dur-1);
     }
 
     .timer-active {
@@ -211,6 +253,10 @@
     .timer-ended {
       color: var(--accent-2);
       animation: pulse 1s infinite alternate;
+    }
+
+    .timer-ended .timer-circle-prog {
+      stroke: var(--accent-2);
     }
 
     @keyframes pulse {
@@ -288,6 +334,60 @@
       font-family: var(--font-mono);
       font-size: 11px;
     }
+
+    /* Focus Mode Overlay */
+    .focus-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-8);
+      text-align: center;
+      animation: fadeIn var(--dur-2) var(--ease-out);
+    }
+
+    .focus-overlay.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .focus-timer {
+      font-size: 120px;
+      font-family: var(--font-mono);
+      margin: var(--space-6) 0;
+      font-weight: 900;
+    }
+
+    .focus-drill-title {
+      font-size: 32px;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      margin-bottom: var(--space-4);
+    }
+
+    .focus-pill {
+      background: var(--surface-2);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-round);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+    }
   </style>
 </head>
 
@@ -299,6 +399,11 @@
       </h1>
       <span id="wakeLockIndicator"
         style="display:none; font-size:10px; background:var(--accent-3); color:#fff; padding:2px 8px; border-radius:10px;">LIVE</span>
+      <span id="safetyReminder"
+        style="font-size:10px; border:1px solid var(--accent-2); color:var(--accent-2); padding:2px 8px; border-radius:10px; cursor:pointer;"
+        onclick="toggleSafety()">
+        ⚠️ GAFAS: <span id="safetyText">REQUERIDAS</span>
+      </span>
     </div>
     <button class="btn ghost" id="themeToggle" style="padding:6px 12px; font-size:10px;">MODO</button>
   </header>
@@ -342,9 +447,10 @@
           #01</div>
       </div>
 
-      <div class="manual-box" style="margin-top:0; margin-bottom:var(--space-5);">
-        <span class="manual-label">Progresión automática</span>
-        Nivel 1 (sesiones 1-4): base técnica · Nivel 2 (5-8): consistencia · Nivel 3 (9+): presión de partido.
+      <div class="manual-box"
+        style="margin-top:0; margin-bottom:var(--space-5); border-left:4px solid var(--accent-3);">
+        <span class="manual-label" style="color:var(--accent-3);">Sugerencia de Equipo</span>
+        <div id="ballAdvice" style="font-size:13px; font-weight:600;">--</div>
       </div>
 
       <div class="block" style="margin-bottom:var(--space-5);">
@@ -425,6 +531,10 @@
           style="padding:12px; border-left: 3px solid var(--accent-3); background:var(--surface-2); border-radius:8px; font-size:12px;">
           <b>Paso de T:</b> Vuelve siempre al centro tras golpear. No te quedes mirando la bola.
         </div>
+        <div
+          style="padding:12px; border-left: 3px solid var(--accent-2); background:var(--surface-2); border-radius:8px; font-size:12px;">
+          <b>Stop Rule:</b> Si la técnica colapsa o hay fatiga extrema, detén el bloque. Calidad > Volumen.
+        </div>
       </div>
     </section>
 
@@ -446,6 +556,37 @@
 
   <div id="toast" class="toast"></div>
 
+  <!-- FOCUS MODE OVERLAY -->
+  <div id="focusOverlay" class="focus-overlay" onclick="toggleFocus(null, true)">
+    <div id="focusPill" class="focus-pill">CALENTAMIENTO</div>
+    <div id="focusTitle" class="focus-drill-title">---</div>
+
+    <div class="timer-display" style="width:240px; height:240px; font-size:80px;">
+      <svg class="timer-svg" viewBox="0 0 100 100">
+        <circle class="timer-circle-bg" cx="50" cy="50" r="45"></circle>
+        <circle id="focusCircle" class="timer-circle-prog" cx="50" cy="50" r="45" stroke-dasharray="283"
+          stroke-dashoffset="0"></circle>
+      </svg>
+      <div id="focusTime">0:00</div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; width:100%; max-width:400px; margin-top:40px;">
+      <div class="manual-box" style="margin:0; padding:12px; background:var(--surface-2);">
+        <label style="font-size:10px; color:var(--muted);">RACHA</label>
+        <div id="focusRacha" style="font-size:24px; font-weight:900;">0</div>
+      </div>
+      <div class="manual-box" style="margin:0; padding:12px; background:var(--surface-2);">
+        <label style="font-size:10px; color:var(--muted);">ACIERTOS</label>
+        <div id="focusAciertos" style="font-size:24px; font-weight:900;">0</div>
+      </div>
+    </div>
+    <div style="margin-top:40px; color:var(--muted); font-size:12px;">Toca para salir</div>
+  </div>
+
+  <!-- AUDIO ASSETS (Generated via Web Audio API, but placeholders for logic) -->
+  <audio id="audioBeep" src=""></audio>
+  <audio id="audioWhistle" src=""></audio>
+
   <script>
     /* =========================================
        SQUASH SOLO PRO — v1.5
@@ -453,9 +594,10 @@
 
     const STORE_KEY = "squash_pro_v1";
     const DEFAULT_STATE = {
-      version: 6, count: 0, session: null, history: [],
+      version: 7, count: 0, session: null, history: [],
       theme: "dark", plan_id: "foundation", total_min: 15,
-      auto_advance: false, notif: false, custom_exercises: []
+      auto_advance: false, notif: false, custom_exercises: [],
+      safety_accepted: false, ball_type: "double_yellow"
     };
 
     const catalog = {
@@ -471,41 +613,59 @@
           ]
         },
         {
-          id: "conditioning", name: "Condición: Resistencia",
+          id: "conditioning", name: "Condición: Resistencia (PSA Density)",
           structure: [
             { id: "wu", weight: 0.10, label: "Calentamiento" },
-            { id: "pw", weight: 0.40, label: "Ghosting Intervalos" },
+            { id: "pw", weight: 0.40, label: "Ghosting Intervalos", density: "15/45" },
             { id: "th", weight: 0.20, label: "Voleas Cruzadas" },
             { id: "ae", weight: 0.20, label: "Drives Fondo" },
             { id: "gm", weight: 0.10, label: "Finalización" }
+          ]
+        },
+        {
+          id: "attwell_volleys", name: "Élite: Serie de Voleas Attwell",
+          structure: [
+            { id: "wu", weight: 0.10, label: "Calentamiento" },
+            { id: "vl", weight: 0.80, label: "Especialización Volea" },
+            { id: "gm", weight: 0.10, label: "Toque" }
+          ]
+        },
+        {
+          id: "dead_ball", name: "Laboratorio: Bola Muerta (Precisión)",
+          structure: [
+            { id: "db", weight: 0.80, label: "Mecánica Estática" },
+            { id: "gm", weight: 0.20, label: "Objetivos Virtuales" }
           ]
         }
       ],
       blocks: {
         wu: [
-          { id: "wu_1", stage: 1, title: "Calentamiento Pro", setup: "Frente a pared frontal.", manual: { explain: "2 toques suaves por lado + 1 bote. Prioriza ritmo y respiración.", good: "Impacto delante del cuerpo y hombros relajados.", bad: "Golpear fuerte antes de activar piernas." } },
-          { id: "wu_2", stage: 2, title: "Calentamiento Dinámico", setup: "Frontal + desplazamiento lateral corto.", manual: { explain: "Alterna 3 voleas de drive y 3 de revés moviéndote medio paso.", good: "Split-step antes de cada golpe.", bad: "Pies estáticos y swing apurado." } },
-          { id: "wu_3", stage: 3, title: "Calentamiento Competitivo", setup: "Desde la T, tocando ambas esquinas delanteras.", manual: { explain: "Secuencia: volea drive, volea revés y salida rápida a la T.", good: "Cuerpo activado sin perder técnica.", bad: "Fatigarte de más en el calentamiento." } }
+          { id: "wu_1", stage: 1, title: "Calentamiento Pro", setup: "Frente a pared frontal.", manual: { explain: "2 toques suaves por lado + 1 bote. Prioriza ritmo.", good: "Impacto delante del cuerpo.", bad: "Golpear fuerte sin activar.", stop: "Fatiga prematura." } },
+          { id: "wu_2", stage: 2, title: "Calentamiento Dinámico", setup: "Frontal + desplazamiento lateral.", manual: { explain: "Alterna 3 voleas moviéndote medio paso.", good: "Split-step reactivo.", bad: "Pies estáticos.", stop: "Falta de coordinación." } }
         ],
         ae: [
-          { id: "ae_1", stage: 1, title: "Drives de Pasillo", setup: "Lateral a la caja de saque.", manual: { explain: "Golpe paralelo con objetivo de 2º bote detrás de la línea corta.", good: "Muñeca firme y punto de impacto constante.", bad: "Pegar de frente a la frontal." } },
-          { id: "ae_2", stage: 2, title: "Paralelas con Objetivos", setup: "Marca dos zonas profundas con cinta.", manual: { explain: "10 bolas por lado intentando caer en zona objetivo.", good: "Altura media que besa pared lateral.", bad: "Buscar potencia en vez de longitud." } },
-          { id: "ae_3", stage: 3, title: "Paralelas Bajo Presión", setup: "Serie de 6 golpes seguidos por lado.", manual: { explain: "Si fallas profundidad, reinicia la serie desde 1.", good: "Rutina de preparación idéntica en cada golpe.", bad: "Acelerar el swing por ansiedad." } }
+          { id: "ae_1", stage: 1, title: "Drives de Pasillo", setup: "Lateral a la caja de saque.", manual: { explain: "Golpe paralelo, 2º bote tras línea corta.", good: "Hombros paralelos a pared lateral.", bad: "Pegar de frente.", stop: "Si la bola se separa >30cm." } },
+          { id: "ae_2", stage: 2, title: "Paralelas con Objetivos", setup: "Objetivo en el nick trasero.", manual: { explain: "10 bolas buscando el rail perfecto.", good: "Altura media, 'muere' atrás.", bad: "Buscar potencia, no longitud.", stop: "Pérdida de control del rail." } }
         ],
         th: [
-          { id: "th_1", stage: 1, title: "Figura de 8", setup: "En la T, bote permitido.", manual: { explain: "Cruza la bola de lado a lado para coordinar hombros y lectura.", good: "Raqueta lista antes del bote.", bad: "Llegar tarde con la cabeza de la raqueta abajo." } },
-          { id: "th_2", stage: 2, title: "Figura de 8 Continua", setup: "En la T, reduce altura de golpe.", manual: { explain: "Mantén 12 impactos seguidos alternando drive y revés.", good: "Cambio de empuñadura temprano.", bad: "Perder eje corporal al girar." } },
-          { id: "th_3", stage: 3, title: "Figura de 8 de Volea", setup: "Más cerca de la frontal, sin bote.", manual: { explain: "Bloquea voleas alternas para mejorar reacción y toma temprana.", good: "Golpe corto y compacto.", bad: "Golpear tarde y con brazo extendido." } }
+          { id: "th_1", stage: 1, title: "Figura de 8", setup: "En la T, bote permitido.", manual: { explain: "Cruza la bola de lado a lado.", good: "Raqueta lista antes del bote.", bad: "Cerrar swing muy tarde.", stop: "Golpeo descontrolado." } }
         ],
         pw: [
-          { id: "pw_1", stage: 1, title: "Ghosting Base", setup: "Sin bola, desde la T.", manual: { explain: "Patrón 4 esquinas a ritmo técnico: salida, lunge y regreso.", good: "Centro de gravedad estable en cada apoyo.", bad: "Pasos cruzados al volver." } },
-          { id: "pw_2", stage: 2, title: "Ghosting por Intervalos", setup: "30 s trabajo + 15 s pausa activa.", manual: { explain: "Alterna esquina delantera y trasera del mismo lado, luego cambia.", good: "Primer paso explosivo, retorno controlado.", bad: "Perder postura al fatigarte." } },
-          { id: "pw_3", stage: 3, title: "Ghosting 6 Puntos", setup: "Incluye media pista y esquinas completas.", manual: { explain: "Secuencia continua con cambios de dirección rápidos.", good: "Recuperación instantánea a la T.", bad: "Saltar en vez de deslizarte con control." } }
+          { id: "pw_1", stage: 1, title: "Ghosting Estrella 6 Puntos", setup: "Sin bola, desde la T.", manual: { explain: "Patrón 6 puntos: 4 esquinas + 2 laterales.", good: "Centro gravedad bajo y estable.", bad: "Pasos cruzados.", stop: "Técnica colapsada." } },
+          { id: "pw_2", stage: 2, title: "Ghosting 15/45 (PSA)", setup: "15s trabajo / 45s pausa.", manual: { explain: "Máxima explosividad en el intervalo.", good: "Primer paso explosivo.", bad: "Arrastrar los pies.", stop: "Incapacidad de recuperar aliento." } }
         ],
         gm: [
-          { id: "gm_1", stage: 1, title: "Targets de Control", setup: "Botella en esquina trasera.", manual: { explain: "Intenta 8 impactos cercanos al objetivo con margen técnico.", good: "Ritmo fluido y puntería progresiva.", bad: "Frustrarte por fallos aislados." } },
-          { id: "gm_2", stage: 2, title: "Targets con Conteo", setup: "Dos objetivos: esquina trasera y media pared.", manual: { explain: "Anota aciertos de 12 intentos y busca superar tu marca.", good: "Ajuste fino de altura y profundidad.", bad: "No registrar resultados." } },
-          { id: "gm_3", stage: 3, title: "Finalización Competitiva", setup: "Objetivo pequeño (cono o lata).", manual: { explain: "1 punto por impacto limpio, 0 por error; juega a 10 puntos.", good: "Mantener técnica bajo presión mental.", bad: "Acortar preparación en los puntos finales." } }
+          { id: "gm_1", stage: 1, title: "Targets de Control", setup: "Botella en esquina trasera.", manual: { explain: "8 impactos cercanos al objetivo.", good: "Ritmo fluido.", bad: "Frustración por fallos.", stop: "Si no logras 2/10." } },
+          { id: "gm_2", stage: 2, title: "Finalización: 'Caja de Cereales'", setup: "Objetivo pequeño en pared lateral.", manual: { explain: "Impacto seco en el objetivo táctico.", good: "Concentración externa total.", bad: "Swing excesivamente largo.", stop: "Pérdida de puntería." } }
+        ],
+        vl: [
+          { id: "vl_1", stage: 1, title: "Voleas Ametralladora", setup: "2m de pared frontal.", manual: { explain: "Voleas muy rápidas para saturar antebrazo.", good: "Snap de muñeca seco.", bad: "Brazo rígido.", stop: "Fallo muscular." } },
+          { id: "vl_2", stage: 1, title: "Voleas Caminando", setup: "De pared frontal a trasera.", manual: { explain: "Retrocede voleando sin que caiga la bola.", good: "Ajuste de altura dinámico.", bad: "Pérdida de eje corporal.", stop: "Pérdida de ritmo." } },
+          { id: "vl_3", stage: 1, title: "Volea Chipped al Rail", setup: "Desde la T.", manual: { explain: "Volea flotada que busca profundidad.", good: "Cara raqueta abierta.", bad: "Golpear plano y fuerte.", stop: "Bolas muy cortas." } }
+        ],
+        db: [
+          { id: "db_1", stage: 1, title: "Drive Estático (Lanzado)", setup: "Lanza con la mano frente a ti.", manual: { explain: "Impacto seco antes del bote.", good: "Transferencia peso pie trasero a delantero.", bad: "Cucharear la bola.", stop: "Errores mecánicos repetitivos." } },
+          { id: "db_2", stage: 1, title: "Drop de Toque Estático", setup: "Cerca de frontal, bola alta.", manual: { explain: "Absorbe energía en las cuerdas.", good: "Codo relajado, mano suave.", bad: "Empujar en vez de guiar.", stop: "Bolas que rebotan mucho." } }
         ]
       }
     };
@@ -619,10 +779,42 @@
         const pool = catalog.blocks[s.id].filter(b => b.stage <= sessionStage);
         const drill = pick(pool.length ? pool : catalog.blocks[s.id], seed + i);
         const blockSec = Math.round(totalSec * s.weight);
-        return { ...drill, label: s.label, stage: drill.stage, seconds: blockSec, timer: { rem: blockSec, active: false, finished: false, endTime: null } };
+        return {
+          ...drill,
+          label: s.label,
+          stage: drill.stage,
+          seconds: blockSec,
+          density: s.density || null,
+          metrics: { racha: 0, aciertos: 0 },
+          timer: { rem: blockSec, active: false, finished: false, endTime: null, isRest: false }
+        };
       });
       state.session = { n, date: nowISODate(), plan_id: plan.id, plan_name: plan.name, blocks };
       save(); render(); toast("Plan generado");
+    }
+
+    function toggleSafety() {
+      state.safety_accepted = !state.safety_accepted;
+      save();
+      const st = document.getElementById("safetyText");
+      if (st) {
+        st.textContent = state.safety_accepted ? "OK" : "REQUERIDAS";
+        st.parentElement.style.borderColor = state.safety_accepted ? "var(--accent-3)" : "var(--accent-2)";
+        st.parentElement.style.color = state.safety_accepted ? "var(--accent-3)" : "var(--accent-2)";
+      }
+    }
+
+    function updateBallAdvice() {
+      const el = document.getElementById("ballAdvice");
+      if (!el) return;
+      const plan = catalog.plans.find(p => p.id === state.plan_id);
+      if (plan?.id === "dead_ball" || plan?.id === "attwell_volleys") {
+        el.textContent = "Punto Rojo / Amarillo: Recomendado para precisión técnica.";
+        el.style.color = "var(--accent-2)";
+      } else {
+        el.textContent = "Doble Punto Amarillo: Recomendada para alta intensidad.";
+        el.style.color = "var(--accent-3)";
+      }
     }
 
     function renderChart() {
@@ -696,11 +888,22 @@
                </div>
                <div class="timer-display ${b.timer.active ? 'timer-active' : ''} ${b.timer.finished ? 'timer-ended' : ''}" id="t_${i}">${mmss(b.timer.rem)}</div>
              </div>
-            <div class="manual-box">
+             <div class="manual-box">
               <div style="margin-bottom:8px;">${escapeHTML(b.manual.explain)}</div>
               <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:11px;">
                 <div style="color:var(--accent-3)"><b>BIEN:</b> ${escapeHTML(b.manual.good)}</div>
                 <div style="color:var(--accent-2)"><b>MAL:</b> ${escapeHTML(b.manual.bad)}</div>
+              </div>
+              ${b.manual.stop ? `<div style="margin-top:8px; font-size:10px; color:var(--accent-2); border-top:1px solid var(--line); pt-4"><b>STOP RULE:</b> ${escapeHTML(b.manual.stop)}</div>` : ''}
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:12px;">
+              <div class="manual-box" style="margin:0; padding:8px;">
+                 <label style="font-size:9px; color:var(--muted); text-transform:uppercase;">Racha Máx</label>
+                 <input type="number" value="${b.metrics.racha}" onchange="updateMetric(${i}, 'racha', this.value)" style="width:100%; background:transparent; border:none; color:var(--ink); font-family:var(--font-display); font-weight:900;">
+              </div>
+              <div class="manual-box" style="margin:0; padding:8px;">
+                 <label style="font-size:9px; color:var(--muted); text-transform:uppercase;">Aciertos</label>
+                 <input type="number" value="${b.metrics.aciertos}" onchange="updateMetric(${i}, 'aciertos', this.value)" style="width:100%; background:transparent; border:none; color:var(--ink); font-family:var(--font-display); font-weight:900;">
               </div>
             </div>
             <div class="row" style="margin-top:16px;">
@@ -711,7 +914,20 @@
         `).join("");
       }
       renderChart();
+      updateBallAdvice();
+      const st = document.getElementById("safetyText");
+      if (st) {
+        st.textContent = state.safety_accepted ? "OK" : "REQUERIDAS";
+        st.parentElement.style.borderColor = state.safety_accepted ? "var(--accent-3)" : "var(--accent-2)";
+        st.parentElement.style.color = state.safety_accepted ? "var(--accent-3)" : "var(--accent-2)";
+      }
     }
+
+    window.updateMetric = (idx, key, val) => {
+      if (!state.session) return;
+      state.session.blocks[idx].metrics[key] = parseInt(val, 10) || 0;
+      save();
+    };
 
     window.toggleT = async (idx) => {
       if (!state.session) return;
@@ -742,8 +958,25 @@
         if (b.timer.active && b.timer.endTime) {
           const rem = Math.ceil((b.timer.endTime - Date.now()) / 1000);
           b.timer.rem = Math.max(0, rem);
+
+          // Visualization cues
+          if (b.timer.rem % 30 === 0 && b.timer.rem > 0 && !b.timer.isRest) {
+            if (Math.random() > 0.7) toast("¡Visualiza a tu oponente en la T!");
+          }
+
           if (b.timer.rem === 0) {
-            b.timer.active = false; b.timer.finished = true; b.timer.endTime = null;
+            // Check for density intervals
+            if (b.density && !b.timer.finished) {
+              const [work, rest] = b.density.split("/").map(Number);
+              if (!b.timer.isRest) {
+                b.timer.isRest = true; b.timer.rem = rest;
+                b.timer.endTime = Date.now() + (rest * 1000);
+                Alarm.play("start"); toast("PAUSA ACTIVA");
+                return;
+              }
+            }
+
+            b.timer.active = false; b.timer.finished = true; b.timer.endTime = null; b.timer.isRest = false;
             Alarm.play("end");
             if (state.auto_advance) {
               const next = state.session.blocks.findIndex((x, j) => j > i && !x.timer.finished);
@@ -751,7 +984,11 @@
             }
             save(); render();
           } else {
-            const el = document.getElementById(`t_${i}`); if (el) el.textContent = mmss(b.timer.rem);
+            const el = document.getElementById(`t_${i}`); if (el) {
+              el.textContent = mmss(b.timer.rem);
+              if (b.timer.isRest) el.style.color = "var(--accent-3)";
+              else el.style.color = b.timer.active ? "var(--accent)" : "var(--ink)";
+            }
           }
         }
       });
