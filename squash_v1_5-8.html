@@ -556,9 +556,13 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- FOCUS MODE OVERLAY -->
-  <div id="focusOverlay" class="focus-overlay" onclick="toggleFocus(null, true)">
-    <div id="focusPill" class="focus-pill">CALENTAMIENTO</div>
+  <!-- FOCUS MODE OVERLAY — eyes-free design -->
+  <div id="focusOverlay" class="focus-overlay">
+    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:500px;">
+      <div id="focusPill" class="focus-pill">CALENTAMIENTO</div>
+      <button onclick="toggleFocus(null,true)" class="btn ghost" style="font-size:11px; padding:6px 14px;">✕ Salir</button>
+    </div>
+
     <div id="focusTitle" class="focus-drill-title">---</div>
 
     <div class="timer-display" style="width:240px; height:240px; font-size:80px;">
@@ -570,17 +574,25 @@
       <div id="focusTime">0:00</div>
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; width:100%; max-width:400px; margin-top:40px;">
-      <div class="manual-box" style="margin:0; padding:12px; background:var(--surface-2);">
-        <label style="font-size:10px; color:var(--muted);">RACHA</label>
-        <div id="focusRacha" style="font-size:24px; font-weight:900;">0</div>
-      </div>
-      <div class="manual-box" style="margin:0; padding:12px; background:var(--surface-2);">
-        <label style="font-size:10px; color:var(--muted);">ACIERTOS</label>
-        <div id="focusAciertos" style="font-size:24px; font-weight:900;">0</div>
-      </div>
+    <!-- Large tap targets for eyes-free metric tracking -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; width:100%; max-width:440px; margin-top:28px;">
+      <button onclick="focusBump('racha')"
+        style="min-height:120px; background:var(--surface-2); border:2px solid var(--line); border-radius:var(--radius-2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:16px; cursor:pointer;">
+        <span style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Racha</span>
+        <div id="focusRacha" style="font-size:44px; font-weight:900; line-height:1;">0</div>
+        <span style="font-size:30px; color:var(--accent); font-weight:900; line-height:1;">+1</span>
+      </button>
+      <button onclick="focusBump('aciertos')"
+        style="min-height:120px; background:var(--surface-2); border:2px solid var(--line); border-radius:var(--radius-2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:16px; cursor:pointer;">
+        <span style="font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;">Aciertos</span>
+        <div id="focusAciertos" style="font-size:44px; font-weight:900; line-height:1;">0</div>
+        <span style="font-size:30px; color:var(--accent); font-weight:900; line-height:1;">+1</span>
+      </button>
     </div>
-    <div style="margin-top:40px; color:var(--muted); font-size:12px;">Toca para salir</div>
+
+    <button onclick="announceBlock()" class="btn ghost" style="margin-top:20px; font-size:12px; padding:8px 20px;">
+      🔊 Leer Instrucciones
+    </button>
   </div>
 
   <!-- AUDIO ASSETS (Generated via Web Audio API, but placeholders for logic) -->
@@ -728,17 +740,51 @@
         try {
           this.init(); if (this.ctx.state === "suspended") await this.ctx.resume();
           const n = this.ctx.currentTime;
-          const freqs = type === "start" ? [440, 880] : [880, 440, 880];
-          freqs.forEach((f, i) => {
+          // Distinct patterns per event type — longer and louder than before
+          const patterns = {
+            start:   [{f:440,t:0,d:0.15},{f:660,t:0.18,d:0.15},{f:880,t:0.36,d:0.25}],
+            end:     [{f:880,t:0,d:0.25},{f:660,t:0.3,d:0.25},{f:440,t:0.6,d:0.4}],
+            warning: [{f:660,t:0,d:0.12},{f:660,t:0.16,d:0.12}],
+            work:    [{f:880,t:0,d:0.2},{f:1100,t:0.25,d:0.2}],
+            rest:    [{f:440,t:0,d:0.3},{f:330,t:0.35,d:0.3}],
+            tick:    [{f:1000,t:0,d:0.05}]
+          };
+          const beeps = patterns[type] || patterns.end;
+          beeps.forEach(({f,t,d}) => {
             const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
             o.connect(g); g.connect(this.ctx.destination);
-            o.type = "sine"; o.frequency.setValueAtTime(f, n + (i * 0.1));
-            g.gain.setValueAtTime(0.1, n + (i * 0.1)); g.gain.exponentialRampToValueAtTime(0.0001, n + (i * 0.1) + 0.08);
-            o.start(n + (i * 0.1)); o.stop(n + (i * 0.1) + 0.08);
+            o.type = "sine"; o.frequency.setValueAtTime(f, n + t);
+            g.gain.setValueAtTime(0.35, n + t); g.gain.exponentialRampToValueAtTime(0.001, n + t + d);
+            o.start(n + t); o.stop(n + t + d + 0.05);
           });
         } catch (e) { }
       }
     };
+
+    // Speech synthesis — announces drill names, transitions and countdowns
+    const Speak = {
+      synth: window.speechSynthesis,
+      voice: null,
+      init() {
+        const pick = () => {
+          const voices = this.synth.getVoices();
+          this.voice = voices.find(v => v.lang.startsWith("es")) || voices[0] || null;
+        };
+        pick();
+        if (this.synth.onvoiceschanged !== undefined) this.synth.onvoiceschanged = pick;
+      },
+      say(text, priority = false) {
+        if (!this.synth) return;
+        if (priority) this.synth.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        if (this.voice) u.voice = this.voice;
+        u.lang = "es-ES"; u.rate = 0.95; u.pitch = 1.0; u.volume = 1.0;
+        this.synth.speak(u);
+      }
+    };
+
+    // Haptic vibration helper
+    function vibe(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch(e){} }
 
     let wakeLock = null;
     async function toggleWake(on) {
@@ -791,6 +837,8 @@
       });
       state.session = { n, date: nowISODate(), plan_id: plan.id, plan_name: plan.name, blocks };
       save(); render(); toast("Plan generado");
+      toggleWake(true);
+      Speak.say(`Sesión ${n} lista. ${plan.name.split(":")[0]}. Toca el timer para comenzar.`);
     }
 
     function toggleSafety() {
@@ -886,7 +934,7 @@
                  <span class="pill">Nivel ${b.stage}/3</span>
                  <div style="font-family:var(--font-display); font-weight:900; font-size:18px;">${escapeHTML(b.title)}</div>
                </div>
-               <div class="timer-display ${b.timer.active ? 'timer-active' : ''} ${b.timer.finished ? 'timer-ended' : ''}" id="t_${i}">${mmss(b.timer.rem)}</div>
+               <div class="timer-display ${b.timer.active ? 'timer-active' : ''} ${b.timer.finished ? 'timer-ended' : ''}" id="t_${i}" onclick="toggleFocus(${i})" style="cursor:pointer;" title="Abrir modo foco">${mmss(b.timer.rem)}</div>
              </div>
              <div class="manual-box">
               <div style="margin-bottom:8px;">${escapeHTML(b.manual.explain)}</div>
@@ -898,12 +946,20 @@
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:12px;">
               <div class="manual-box" style="margin:0; padding:8px;">
-                 <label style="font-size:9px; color:var(--muted); text-transform:uppercase;">Racha Máx</label>
-                 <input type="number" value="${b.metrics.racha}" onchange="updateMetric(${i}, 'racha', this.value)" style="width:100%; background:transparent; border:none; color:var(--ink); font-family:var(--font-display); font-weight:900;">
+                <label style="font-size:9px; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:4px;">Racha Máx</label>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <button class="btn ghost" onclick="bumpMetric(${i},'racha',-1)" style="padding:2px 10px; min-height:36px; font-size:18px; flex-shrink:0;">−</button>
+                  <span id="m_racha_${i}" style="flex:1; text-align:center; font-family:var(--font-display); font-weight:900; font-size:22px;">${b.metrics.racha}</span>
+                  <button class="btn accent" onclick="bumpMetric(${i},'racha',1)" style="padding:2px 10px; min-height:36px; font-size:18px; flex-shrink:0;">+</button>
+                </div>
               </div>
               <div class="manual-box" style="margin:0; padding:8px;">
-                 <label style="font-size:9px; color:var(--muted); text-transform:uppercase;">Aciertos</label>
-                 <input type="number" value="${b.metrics.aciertos}" onchange="updateMetric(${i}, 'aciertos', this.value)" style="width:100%; background:transparent; border:none; color:var(--ink); font-family:var(--font-display); font-weight:900;">
+                <label style="font-size:9px; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:4px;">Aciertos</label>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <button class="btn ghost" onclick="bumpMetric(${i},'aciertos',-1)" style="padding:2px 10px; min-height:36px; font-size:18px; flex-shrink:0;">−</button>
+                  <span id="m_aciertos_${i}" style="flex:1; text-align:center; font-family:var(--font-display); font-weight:900; font-size:22px;">${b.metrics.aciertos}</span>
+                  <button class="btn accent" onclick="bumpMetric(${i},'aciertos',1)" style="padding:2px 10px; min-height:36px; font-size:18px; flex-shrink:0;">+</button>
+                </div>
               </div>
             </div>
             <div class="row" style="margin-top:16px;">
@@ -937,10 +993,14 @@
       if (active) {
         if (b.timer.finished) { b.timer.rem = b.seconds; b.timer.finished = false; }
         b.timer.active = true; b.timer.endTime = Date.now() + (b.timer.rem * 1000);
-        Alarm.play("start"); toggleWake(true);
+        Alarm.play("start"); vibe([100, 50, 100]);
+        Speak.say(`${b.title}. ${mmss(b.timer.rem)} minutos`, true);
+        toggleWake(true);
       } else {
         if (b.timer.endTime) b.timer.rem = Math.ceil((b.timer.endTime - Date.now()) / 1000);
-        b.timer.active = false; b.timer.endTime = null; toggleWake(false);
+        b.timer.active = false; b.timer.endTime = null;
+        Speak.say("Pausado", true); vibe(200);
+        // Keep wake lock active while session exists — release only on session end
       }
       save(); render();
     };
@@ -949,38 +1009,134 @@
       if (!state.session) return;
       const b = state.session.blocks[idx];
       b.timer.active = false; b.timer.rem = 0; b.timer.finished = true; b.timer.endTime = null;
+      Speak.say("Bloque omitido", true);
       save(); render();
     };
 
+    // ---- Focus Mode ----
+    let focusBlockIdx = null;
+
+    window.toggleFocus = (idx, close = false) => {
+      const overlay = document.getElementById("focusOverlay");
+      if (close || (overlay.classList.contains("active") && idx === null)) {
+        overlay.classList.remove("active");
+        focusBlockIdx = null;
+        return;
+      }
+      // Resolve active block if no idx given
+      if (idx === null || idx === undefined) {
+        idx = state.session?.blocks.findIndex(b => b.timer.active);
+        if (idx === -1) idx = null;
+      }
+      focusBlockIdx = idx;
+      overlay.classList.add("active");
+      if (idx !== null && state.session?.blocks[idx]) {
+        const b = state.session.blocks[idx];
+        const ep = document.getElementById("focusPill"); if (ep) ep.textContent = b.label;
+        const et = document.getElementById("focusTitle"); if (et) et.textContent = b.title;
+        updateFocusOverlay(idx);
+        Speak.say(`${b.title}. ${b.manual.explain}`, false);
+      }
+    };
+
+    function updateFocusOverlay(idx) {
+      if (idx === null || idx === undefined || !state.session?.blocks[idx]) return;
+      const b = state.session.blocks[idx];
+      const te = document.getElementById("focusTime"); if (te) te.textContent = mmss(b.timer.rem);
+      const re = document.getElementById("focusRacha"); if (re) re.textContent = b.metrics.racha;
+      const ae = document.getElementById("focusAciertos"); if (ae) ae.textContent = b.metrics.aciertos;
+      const circle = document.getElementById("focusCircle");
+      if (circle && b.seconds > 0) circle.style.strokeDashoffset = 283 * (1 - b.timer.rem / b.seconds);
+    }
+
+    window.focusBump = (key) => {
+      if (focusBlockIdx === null || !state.session) return;
+      const b = state.session.blocks[focusBlockIdx];
+      b.metrics[key] = Math.max(0, (b.metrics[key] || 0) + 1);
+      save();
+      updateFocusOverlay(focusBlockIdx);
+      vibe(50); Alarm.play("tick");
+      Speak.say(`${key === "racha" ? "Racha" : "Aciertos"}: ${b.metrics[key]}`);
+    };
+
+    window.announceBlock = () => {
+      if (focusBlockIdx === null || !state.session) return;
+      const b = state.session.blocks[focusBlockIdx];
+      Speak.say(`${b.title}. ${b.manual.explain}. Bien: ${b.manual.good}. Evitar: ${b.manual.bad}.`, true);
+    };
+
+    window.bumpMetric = (idx, key, delta) => {
+      if (!state.session) return;
+      const b = state.session.blocks[idx];
+      b.metrics[key] = Math.max(0, (b.metrics[key] || 0) + delta);
+      save();
+      const el = document.getElementById(`m_${key}_${idx}`);
+      if (el) el.textContent = b.metrics[key];
+      if (focusBlockIdx === idx) updateFocusOverlay(idx);
+      vibe(50);
+    };
+
+    // ---- Main Timer Loop ----
     setInterval(() => {
       if (!state.session?.blocks) return;
       state.session.blocks.forEach((b, i) => {
         if (b.timer.active && b.timer.endTime) {
           const rem = Math.ceil((b.timer.endTime - Date.now()) / 1000);
+          const prevRem = b.timer.rem;
           b.timer.rem = Math.max(0, rem);
 
-          // Visualization cues
-          if (b.timer.rem % 30 === 0 && b.timer.rem > 0 && !b.timer.isRest) {
-            if (Math.random() > 0.7) toast("¡Visualiza a tu oponente en la T!");
+          // Countdown audio cues — only trigger once per second change
+          if (b.timer.rem !== prevRem && !b.timer.isRest) {
+            if (b.timer.rem === 30) { Alarm.play("warning"); vibe([50, 100, 50]); Speak.say("30 segundos"); }
+            else if (b.timer.rem === 10) { Alarm.play("warning"); vibe([50, 100, 50]); Speak.say("10 segundos"); }
+            else if (b.timer.rem === 5) { Speak.say("5, 4, 3, 2, 1"); }
+          }
+
+          // Random tactical cue via voice (not just toast)
+          if (b.timer.rem % 30 === 0 && b.timer.rem > 0 && b.timer.rem !== prevRem && !b.timer.isRest) {
+            if (Math.random() > 0.7) Speak.say("Visualiza a tu oponente en la T");
           }
 
           if (b.timer.rem === 0) {
-            // Check for density intervals
+            // Density interval transition
             if (b.density && !b.timer.finished) {
-              const [work, rest] = b.density.split("/").map(Number);
+              const [, rest] = b.density.split("/").map(Number);
               if (!b.timer.isRest) {
                 b.timer.isRest = true; b.timer.rem = rest;
                 b.timer.endTime = Date.now() + (rest * 1000);
-                Alarm.play("start"); toast("PAUSA ACTIVA");
+                Alarm.play("rest"); vibe([200, 100, 200]);
+                Speak.say("Pausa activa", true); toast("PAUSA ACTIVA");
                 return;
               }
             }
 
             b.timer.active = false; b.timer.finished = true; b.timer.endTime = null; b.timer.isRest = false;
-            Alarm.play("end");
+            Alarm.play("end"); vibe([300, 100, 300]);
+            Speak.say(`Bloque completado. ${b.title} finalizado.`, true);
+
+            // Web notification (works even with screen dimmed on some devices)
+            if (state.notif && Notification.permission === "granted") {
+              try { new Notification("Squash Solo", { body: `${b.title} completado`, silent: false }); } catch(e) {}
+            }
+
             if (state.auto_advance) {
               const next = state.session.blocks.findIndex((x, j) => j > i && !x.timer.finished);
-              if (next !== -1) setTimeout(() => window.toggleT(next), 1000);
+              if (next !== -1) {
+                const nb = state.session.blocks[next];
+                Speak.say(`Siguiente: ${nb.title}`);
+                setTimeout(() => {
+                  window.toggleT(next);
+                  // Update focus overlay to new block if it was open
+                  if (focusBlockIdx !== null) {
+                    focusBlockIdx = next;
+                    const ep = document.getElementById("focusPill"); if (ep) ep.textContent = nb.label;
+                    const et = document.getElementById("focusTitle"); if (et) et.textContent = nb.title;
+                  }
+                }, 1500);
+              } else {
+                Speak.say("Entrenamiento completado. Excelente trabajo.");
+                if (focusBlockIdx !== null) toggleFocus(null, true);
+              }
             }
             save(); render();
           } else {
@@ -989,6 +1145,8 @@
               if (b.timer.isRest) el.style.color = "var(--accent-3)";
               else el.style.color = b.timer.active ? "var(--accent)" : "var(--ink)";
             }
+            // Keep focus overlay in sync
+            if (focusBlockIdx === i) updateFocusOverlay(i);
           }
         }
       });
@@ -999,9 +1157,27 @@
       if (!rpe || rpe < 1 || rpe > 10) { alert("Esfuerzo 1-10"); return; }
       state.history.push({ date: nowISODate(), n: state.session.n, plan: state.session.plan_name, rpe, notes: document.getElementById("notesInput").value });
       state.count = state.session.n; state.session = null; save(); render(); toast("Guardado");
+      toggleWake(false);
     };
 
-    document.getElementById("btnReset").onclick = () => { if (confirm("¿Descartar?")) { state.session = null; save(); render(); } };
+    document.getElementById("btnReset").onclick = () => { if (confirm("¿Descartar?")) { state.session = null; save(); render(); toggleWake(false); } };
+
+    // Re-sync timers when returning from background / screen-off
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        ensureSessionIntegrity();
+        render();
+        if (state.session) {
+          // Re-request wake lock if it was released by the OS
+          toggleWake(true);
+          const activeBlock = state.session.blocks.find(b => b.timer.active);
+          if (activeBlock) {
+            Alarm.play("warning");
+            Speak.say(`Reanudando. ${activeBlock.title}. ${mmss(activeBlock.timer.rem)} restantes.`, true);
+          }
+        }
+      }
+    });
     document.getElementById("themeToggle").onclick = () => { state.theme = state.theme === "light" ? "dark" : "light"; save(); render(); };
     document.getElementById("durationSelect").onchange = e => { state.total_min = parseInt(e.target.value, 10); save(); if (!state.session) render(); };
     document.getElementById("planSelect").onchange = e => { state.plan_id = e.target.value; save(); if (!state.session) render(); };
@@ -1092,6 +1268,9 @@
 
     mergeCustomExercises();
     initUI(); render(); renderCustomList();
+    Speak.init();
+    // Restore wake lock if session was active before page reload
+    if (state.session) toggleWake(true);
   </script>
 </body>
 
